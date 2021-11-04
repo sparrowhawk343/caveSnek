@@ -4,15 +4,13 @@ using UnityEngine;
 
 public class Tile : MonoBehaviour
 {
-    // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
+    private List<GameObject> objects;
 
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
+    public Vector2Int position;
+
+    private bool hasSnake;
+    private bool hasFruit;
+    private bool hasWall;
+
+
 }
