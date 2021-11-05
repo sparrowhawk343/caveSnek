@@ -182,7 +182,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4f8552e75c9a85647815194ad76cd43b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  movePoint: {fileID: 195233438}
 --- !u!4 &490492672
 Transform:
   m_ObjectHideFlags: 0
