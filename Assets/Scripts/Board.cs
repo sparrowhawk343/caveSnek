@@ -5,10 +5,10 @@ using Cinemachine;
 
 public class Board : MonoBehaviour
 {
-    private Vector2Int gridSize = new Vector2Int();
-
     private int gridXLength = 20;
     private int gridYLength = 20;
+
+    public Vector2Int gridSize = new Vector2Int();
     public Tile[,] tileGrid;
     public Tile tilePrefab;
 
@@ -27,7 +27,8 @@ public class Board : MonoBehaviour
     private void CreateGrid()
     {
         tileGrid = new Tile[gridSize.x, gridSize.y];
-        float gridOffset = 0.5f;
+        // use this if needed to offset from/to unity's displayed units
+        float gridOffset = 0f;
 
         for (int x = 0; x < gridSize.x; x++)
         {
@@ -40,4 +41,5 @@ public class Board : MonoBehaviour
             }
         }
     }
+
 }
