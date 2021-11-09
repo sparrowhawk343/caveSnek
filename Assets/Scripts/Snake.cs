@@ -16,11 +16,13 @@ public class Snake : MonoBehaviour
     // movement fields
     private float tickTime = 0.5f;
     private Vector2 currentDirection;
+    private Tile currentTile;
 
 
     private void Start()
     {
         board = FindObjectOfType<Board>();
+        SetCurrentTile();
         currentDirection = Vector2.right;
         StartCoroutine(MovementTick());
     }
@@ -30,9 +32,15 @@ public class Snake : MonoBehaviour
         Turn();
     }
 
+    private void SetCurrentTile()
+    {
+        currentTile = board.tileGrid[(int)transform.position.x, (int)transform.position.y];
+    }
+
     private void Move()
     {
-        transform.position = new Vector3(Mathf.Round(transform.position.x) + currentDirection.x, Mathf.Round(transform.position.y) + currentDirection.y, -1f);
+        transform.position = new Vector3(Mathf.Round(transform.position.x) + currentDirection.x, Mathf.Round(transform.position.y) + currentDirection.y, 0f);
+
 
         if (transform.position.x > board.gridSize.x - 1)
         {
@@ -50,6 +58,8 @@ public class Snake : MonoBehaviour
         {
             transform.position = new Vector3(transform.position.x, board.gridSize.y - 1, transform.position.z);
         }
+        SetCurrentTile();
+        
     }
 
     private void Turn()
@@ -77,12 +87,40 @@ public class Snake : MonoBehaviour
         segments.Add(new SnakeNode());
     }
 
+    private void CheckTile(Tile tile)
+    {
+        if (tile.objects.Count == 0)
+        {
+            return;
+        }
+
+        for (int i = 0; i < tile.objects.Count; i++)
+        {
+            var type = tile.objects[i].GetType();
+
+            if (type == typeof(Fruit))
+            {
+                ((Fruit) tile.objects[i]).RandomizePosition();
+                i--;
+            }
+            else if (type == typeof(Wall))
+            {
+                // do wall stuff here
+            }
+            else if (type == typeof(SnakeNode))
+            {
+                // do snake stuff here
+            }
+        }
+    }
+
     private IEnumerator MovementTick()
     {
         while (true)
         {
             yield return new WaitForSeconds(tickTime);
             Move();
+            CheckTile(currentTile);
         }
     }
 }

@@ -2,23 +2,31 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Fruit : MonoBehaviour
+public class Fruit : MonoBehaviour, ITileObject
 {
-    Board board;
+    private Board board;
+    private Tile tile;
 
     private void Start()
     {
-        board = FindObjectOfType<Board>();
+        board = Board.instance;
         RandomizePosition();
     }
 
-    // TODO: make fruits spawn!
-
-    private void RandomizePosition()
+    public void RandomizePosition()
     {
-        float x = Random.Range(0f, board.gridSize.x - 1);
-        float y = Random.Range(0f, board.gridSize.y - 1);
+        tile = board.tileGrid[(int) transform.position.x, (int) transform.position.y];
+        
+        tile.objects.Remove(this);
+        board.fruitPositions.Remove(transform.position);
+        
+        int x = Random.Range(0, board.gridSize.x - 1);
+        int y = Random.Range(0, board.gridSize.y - 1);
 
-        transform.position = new Vector3(Mathf.Round(x), Mathf.Round(y), 0.0f);
+        transform.position = new Vector3(Mathf.Round(x), Mathf.Round(y), 0f);
+        tile = board.tileGrid[x, y];
+        board.fruitPositions.Add(transform.position);
+        tile.objects.Add(this);
     }
+
 }

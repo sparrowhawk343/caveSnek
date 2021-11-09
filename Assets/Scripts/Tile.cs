@@ -4,13 +4,8 @@ using UnityEngine;
 
 public class Tile : MonoBehaviour
 {
-    private List<GameObject> objects;
+    public List<ITileObject> objects = new List<ITileObject>();
 
     public Vector2Int position;
-
-    private bool hasSnake;
-    private bool hasFruit;
-    private bool hasWall;
-
 
 }

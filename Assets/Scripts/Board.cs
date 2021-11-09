@@ -5,8 +5,12 @@ using Cinemachine;
 
 public class Board : MonoBehaviour
 {
+    public static Board instance;
+    
     private int gridXLength = 20;
     private int gridYLength = 20;
+
+    public HashSet<Vector3> fruitPositions = new HashSet<Vector3>();
 
     public Vector2Int gridSize = new Vector2Int();
     public Tile[,] tileGrid;
@@ -17,12 +21,17 @@ public class Board : MonoBehaviour
         gridSize.x = gridXLength;
         gridSize.y = gridYLength;
         
-    }
-
-    private void Start()
-    {
+        if (instance == null)
+        {
+            instance = this;
+        }
+        else
+        { 
+            Destroy(gameObject);
+        }
         CreateGrid();
     }
+
 
     private void CreateGrid()
     {
