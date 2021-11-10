@@ -218,6 +218,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4f8552e75c9a85647815194ad76cd43b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  nodePrefab: {fileID: 1032330791111818066, guid: aaaea4f1af3ba1b469c363e7f54d441c, type: 3}
 --- !u!4 &490492672
 Transform:
   m_ObjectHideFlags: 0
@@ -245,6 +246,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dbdf4b6af15bc3e41b291c0f1e3881e4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  previousPosition: {x: 0, y: 0, z: 0}
 --- !u!1 &1367710214
 GameObject:
   m_ObjectHideFlags: 0
