@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -20,13 +21,11 @@ public class Snake : MonoBehaviour
     private Tile currentTile;
     private Tile previouslySpawnedTile;
 
-
     private void Start()
     {
         headNode = GetComponent<SnakeNode>();
         segments.Add(headNode);
         board = FindObjectOfType<Board>();
-        SetCurrentTile();
         currentDirection = Vector2.right;
         StartCoroutine(MovementTick());
     }
@@ -34,11 +33,6 @@ public class Snake : MonoBehaviour
     private void Update()
     {
         Turn();
-    }
-
-    private void SetCurrentTile()
-    {
-        currentTile = board.tileGrid[(int) transform.position.x, (int) transform.position.y];
     }
 
     // break out transform calculations and put them in the grid class instead
@@ -81,7 +75,6 @@ public class Snake : MonoBehaviour
             transform.position = new Vector3(transform.position.x, board.gridSize.y - 1, transform.position.z);
         }
 
-        SetCurrentTile();
     }
 
     private void Turn()
@@ -106,40 +99,26 @@ public class Snake : MonoBehaviour
 
     private void AddNodeToSnake()
     {
-        SnakeNode segment = Instantiate(nodePrefab);
-        segment.transform.SetParent(transform);
-        segment.Move(previouslySpawnedTile.transform.position);
+        SnakeNode segment = Instantiate(nodePrefab, previouslySpawnedTile.transform);
         segments.Add(segment);
     }
 
-    // break out into tile collision class that the snake can ask for stuff
-    // get rid of the type checks and use an enum in the tile object instead
-    private void CheckTile(Tile tile)
+    private void OnTriggerEnter2D(Collider2D other)
     {
-        if (tile.objects.Count == 0)
+        if (other.CompareTag("Fruit"))
         {
-            return;
+            AddNodeToSnake();
         }
 
-        for (int i = 0; i < tile.objects.Count; i++)
+        if (other.CompareTag("Wall") || other.CompareTag("Snake"))
         {
-            var type = tile.objects[i].GetType();
-
-            if (type == typeof(Fruit))
-            {
-                AddNodeToSnake();
-                ((Fruit) tile.objects[i]).RandomizePosition();
-                i--;
-            }
-            else if (type == typeof(Wall))
-            {
-                // do wall stuff here
-            }
-            else if (type == typeof(SnakeNode))
-            {
-                // do this in move instead, check if head has same position as another element in the linked list
-            }
+            Die();
         }
+    }
+
+    private void Die()
+    {
+        // game over logic here
     }
 
     // move this to update using a timer instead later
@@ -149,7 +128,6 @@ public class Snake : MonoBehaviour
         {
             yield return new WaitForSeconds(tickTime);
             Move();
-            CheckTile(currentTile);
         }
     }
 }
