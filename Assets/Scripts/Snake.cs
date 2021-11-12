@@ -9,6 +9,9 @@ public class Snake : MonoBehaviour
 {
     // grid reference
     Board board;
+    
+    // scene manager reference
+    private SceneManager sceneManager;
 
     // data structure fields
     private ADT.LinkedList<SnakeNode> segments = new ADT.LinkedList<SnakeNode>();
@@ -23,6 +26,7 @@ public class Snake : MonoBehaviour
 
     private void Start()
     {
+        sceneManager = FindObjectOfType<SceneManager>();
         headNode = GetComponent<SnakeNode>();
         segments.Add(headNode);
         board = FindObjectOfType<Board>();
@@ -118,7 +122,8 @@ public class Snake : MonoBehaviour
 
     private void Die()
     {
-        // game over logic here
+        Debug.Log("u ded bruh");
+        sceneManager.LoadScene(1);
     }
 
     // move this to update using a timer instead later
