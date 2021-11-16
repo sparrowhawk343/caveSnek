@@ -30,7 +30,7 @@ public class Snake : MonoBehaviour
         headNode = GetComponent<SnakeNode>();
         segments.Add(headNode);
         board = FindObjectOfType<Board>();
-        currentDirection = Vector2.right;
+        // currentDirection = Vector2.right;
         StartCoroutine(MovementTick());
     }
 

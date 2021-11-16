@@ -1,8 +1,10 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Xml;
 using UnityEngine;
 using Cinemachine;
+using UnityEngine.Serialization;
 
 public class Board : MonoBehaviour
 {
@@ -17,12 +19,15 @@ public class Board : MonoBehaviour
     public Tile[,] tileGrid;
     public Tile tilePrefab;
     public Wall wallPrefab;
+    public int wallThresholdSize = 10;
+    public int roomThresholdSize = 10;
+    [FormerlySerializedAs("timesToRun")] public int amountOfSmoothingPasses = 1;
 
     private int gridXLength = 100;
     private int gridYLength = 100;
 
     private Wall[,] walls;
-    private int[,] booleanGrid;
+    private int[,] wallPlacementGrid;
 
     private void Awake()
     {
@@ -39,17 +44,17 @@ public class Board : MonoBehaviour
         }
 
         CreateTiles();
-        CreateBooleanGrid();
-        GenerateCaves();
+        CreateWallPlacementGrid();
+        GenerateCave();
         CreateWalls();
     }
 
-    private void CreateBooleanGrid()
+    private void CreateWallPlacementGrid()
     {
-        booleanGrid = new int[gridSize.x, gridSize.y];
+        wallPlacementGrid = new int[gridSize.x, gridSize.y];
         if (useRandomSeed)
         {
-            seed = Time.time.ToString();
+            seed = DateTime.Now.Ticks.ToString();
         }
 
         System.Random pseudoRandom = new System.Random(seed.GetHashCode());
@@ -58,7 +63,7 @@ public class Board : MonoBehaviour
         {
             for (int y = 0; y < gridSize.y; y++)
             {
-                booleanGrid[x, y] = (pseudoRandom.Next(0, 100) < randomFillPercent) ? 1 : 0;
+                wallPlacementGrid[x, y] = (pseudoRandom.Next(0, 100) < randomFillPercent) ? 1 : 0;
             }
         }
     }
@@ -90,7 +95,7 @@ public class Board : MonoBehaviour
         {
             for (int y = 0; y < gridSize.y; y++)
             {
-                if (booleanGrid[x, y] == 1)
+                if (wallPlacementGrid[x, y] == 1)
                 {
                     Vector3 wallPosition = new Vector3(x + wallOffset, y + wallOffset, 0);
                     walls[x, y] = Instantiate(wallPrefab, wallPosition, Quaternion.identity);
@@ -102,27 +107,10 @@ public class Board : MonoBehaviour
         }
     }
 
-    // private void CreateWallsOld()
-    // {
-    //     walls = new Wall[gridSize.x, gridSize.y];
-    //     float wallOffset = 0f;
-    //
-    //     for (int x = 0; x < gridSize.x; x++)
-    //     {
-    //         for (int y = 0; y < gridSize.y; y++)
-    //         {
-    //             int wallPercentage = Random.Range(0, 100);
-    //             if (wallPercentage <= 45)
-    //             {
-    //                 Vector3 wallPosition = new Vector3(x + wallOffset, y + wallOffset, 0);
-    //                 walls[x, y] = Instantiate(wallPrefab, wallPosition, Quaternion.identity);
-    //                 walls[x, y].position = new Vector2Int(x, y);
-    //                 walls[x, y].transform.SetParent(gameObject.transform, true);
-    //                 tileGrid[x, y].hasWall = true;
-    //             }
-    //         }
-    //     }
-    // }
+    private bool IsInMapRange(int x, int y)
+    {
+        return x >= 0 && x < gridSize.x && y >= 0 && y < gridSize.y;
+    }
 
     private List<Tile> GetNeighbors(Tile tile)
     {
@@ -137,12 +125,12 @@ public class Board : MonoBehaviour
                     continue;
                 }
 
-                int checkX = tile.position.x + x;
-                int checkY = tile.position.y + y;
+                int neighborX = tile.position.x + x;
+                int neighborY = tile.position.y + y;
 
-                if (checkX >= 0 && checkX < gridSize.x && checkY >= 0 && checkY < gridSize.y)
+                if (IsInMapRange(neighborX, neighborY))
                 {
-                    neighbors.Add(tileGrid[checkX, checkY]);
+                    neighbors.Add(tileGrid[neighborX, neighborY]);
                 }
             }
         }
@@ -151,10 +139,9 @@ public class Board : MonoBehaviour
     }
 
 
-    private void GenerateCaves()
+    private void GenerateCave()
     {
-        int timesToRun = 1;
-        for (int i = 0; i < timesToRun; i++)
+        for (int i = 0; i < amountOfSmoothingPasses; i++)
         {
             for (int x = 0; x < gridSize.x; x++)
             {
@@ -167,21 +154,109 @@ public class Board : MonoBehaviour
 
                     foreach (Tile tile in neighbors)
                     {
-                        if (booleanGrid[tile.position.x, tile.position.y] == 1)
+                        if (wallPlacementGrid[tile.position.x, tile.position.y] == 1)
                         {
                             wallCounter++;
                         }
                     }
 
-                    if (booleanGrid[currentTile.position.x, currentTile.position.y] == 1 && wallCounter >= 4)
+                    if (wallCounter > 4)
                     {
                         continue;
                     }
 
-                    if (booleanGrid[currentTile.position.x, currentTile.position.y] == 1 && wallCounter < 4)
+                    if (wallCounter < 4)
                     {
-                        booleanGrid[currentTile.position.x, currentTile.position.y] = 0;
+                        wallPlacementGrid[currentTile.position.x, currentTile.position.y] = 0;
                     }
+                }
+            }
+        }
+        ProcessMap();
+    }
+
+    List<Tile> GetRegionTiles(int startX, int startY)
+    {
+        List<Tile> tiles = new List<Tile>();
+        int[,] mapFlags = new int[gridSize.x, gridSize.y];
+        int tileType = wallPlacementGrid[startX, startY];
+
+        Queue<Tile> queue = new Queue<Tile>();
+        Tile tile = tileGrid[startX, startY];
+        queue.Enqueue(tile);
+        mapFlags[startX, startY] = 1;
+
+        while (queue.Count > 0)
+        {
+            tile = queue.Dequeue();
+            tiles.Add(tile);
+
+            for (int x = tile.position.x - 1; x <= tile.position.x + 1; x++)
+            {
+                for (int y = tile.position.y - 1; y <= tile.position.y + 1; y++)
+                {
+                    if (IsInMapRange(x, y) && (y == tile.position.y || x == tile.position.x))
+                    {
+                        if (mapFlags[x, y] == 0 && wallPlacementGrid[x, y] == tileType)
+                        {
+                            mapFlags[x, y] = 1;
+                            queue.Enqueue(tileGrid[x, y]);
+                        }
+                    }
+                }
+            }
+        }
+
+        return tiles;
+    }
+
+    List<List<Tile>> GetRegions(int tileType)
+    {
+        List<List<Tile>> regions = new List<List<Tile>>();
+        int[,] mapFlags = new int[gridSize.x, gridSize.y];
+
+        for (int x = 0; x < gridSize.x; x++)
+        {
+            for (int y = 0; y < gridSize.y; y++)
+            {
+                if (mapFlags[x, y] == 0 && wallPlacementGrid[x, y] == tileType)
+                {
+                    List<Tile> newRegion = GetRegionTiles(x, y);
+                    regions.Add(newRegion);
+
+                    foreach (Tile tile in newRegion)
+                    {
+                        mapFlags[tile.position.x, tile.position.y] = 1;
+                    }
+                }
+            }   
+        }
+
+        return regions;
+    }
+
+    private void ProcessMap()
+    {
+        List<List<Tile>> wallRegions = GetRegions(1);
+        foreach (List<Tile> wallRegion in wallRegions)
+        {
+            if (wallRegion.Count < wallThresholdSize)
+            {
+                foreach (Tile tile in wallRegion)
+                {
+                    wallPlacementGrid[tile.position.x, tile.position.y] = 0;
+                }
+            }
+        }
+        
+        List<List<Tile>> roomRegions = GetRegions(0);
+        foreach (List<Tile> roomRegion in roomRegions)
+        {
+            if (roomRegion.Count < roomThresholdSize)
+            {
+                foreach (Tile tile in roomRegion)
+                {
+                    wallPlacementGrid[tile.position.x, tile.position.y] = 1;
                 }
             }
         }

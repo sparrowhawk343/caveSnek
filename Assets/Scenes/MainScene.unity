@@ -483,11 +483,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   gridSize: {x: 0, y: 0}
-  randomFillPercent: 50
-  seed: 
+  randomFillPercent: 65
+  seed: asfgett
   useRandomSeed: 1
   tilePrefab: {fileID: -1232090600067967400, guid: d3bef4185147bff429f03523507ea30f, type: 3}
   wallPrefab: {fileID: 3543934647038509353, guid: 82e48b7c37f86a249b0cb9d497e61be2, type: 3}
+  wallThresholdSize: 10
+  roomThresholdSize: 50
+  amountOfSmoothingPasses: 5
 --- !u!1001 &133851229333111124
 PrefabInstance:
   m_ObjectHideFlags: 0
