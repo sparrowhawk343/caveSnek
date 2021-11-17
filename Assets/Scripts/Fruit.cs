@@ -2,30 +2,34 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Fruit : MonoBehaviour
+public class Fruit : TileObject
 {
-    private Board board;
-
     private void Start()
     {
-        board = Board.instance;
         RandomizePosition();
     }
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.tag == "Player")
+        if (other.CompareTag("Player"))
         {
             RandomizePosition();
         }
     }
     public void RandomizePosition()
     {
-        board.fruitPositions.Remove(transform.position);
         
         int x = Random.Range(0, board.gridSize.x - 1);
         int y = Random.Range(0, board.gridSize.y - 1);
 
-        transform.position = new Vector3(Mathf.Round(x), Mathf.Round(y), 0f);
-        board.fruitPositions.Add(transform.position);
+        if (IsTileSpawnable(board.tileGrid[x, y]))
+        {
+            board.fruitPositions.Remove(transform.position);
+            transform.position = new Vector3(Mathf.Round(x), Mathf.Round(y), 0f);
+            board.fruitPositions.Add(transform.position);
+        }
+        else
+        {
+            RandomizePosition();
+        }
     }
 }

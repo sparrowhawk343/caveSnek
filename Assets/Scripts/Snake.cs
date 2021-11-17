@@ -4,12 +4,10 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
 using ADT;
+using Random = UnityEngine.Random;
 
-public class Snake : MonoBehaviour
+public class Snake : TileObject
 {
-    // grid reference
-    Board board;
-    
     // scene manager reference
     private SceneManager sceneManager;
 
@@ -24,12 +22,14 @@ public class Snake : MonoBehaviour
     private Tile currentTile;
     private Tile previouslySpawnedTile;
 
+    // make starting position of snek be random tile without a wall
+
     private void Start()
     {
         sceneManager = FindObjectOfType<SceneManager>();
         headNode = GetComponent<SnakeNode>();
         segments.Add(headNode);
-        board = FindObjectOfType<Board>();
+        SetStartingPosition();
         // currentDirection = Vector2.right;
         StartCoroutine(MovementTick());
     }
@@ -37,6 +37,21 @@ public class Snake : MonoBehaviour
     private void Update()
     {
         Turn();
+    }
+
+    private void SetStartingPosition()
+    {
+        int x = Random.Range(0, board.gridSize.x - 1);
+        int y = Random.Range(0, board.gridSize.y - 1);
+
+        if (IsTileSpawnable(board.tileGrid[x, y]))
+        {
+            transform.position = new Vector3(Mathf.Round(x), Mathf.Round(y), 0f);
+        }
+        else
+        {
+            SetStartingPosition();
+        }
     }
 
     // break out transform calculations and put them in the grid class instead
@@ -56,7 +71,7 @@ public class Snake : MonoBehaviour
                 segments[i].Move(newHeadPosition);
                 continue;
             }
-            
+
             segments[i].Move(segments[i - 1].previousPosition);
         }
 
@@ -78,7 +93,6 @@ public class Snake : MonoBehaviour
         {
             transform.position = new Vector3(transform.position.x, board.gridSize.y - 1, transform.position.z);
         }
-
     }
 
     private void Turn()
@@ -103,8 +117,11 @@ public class Snake : MonoBehaviour
 
     private void AddNodeToSnake()
     {
-        SnakeNode segment = Instantiate(nodePrefab, previouslySpawnedTile.transform);
-        segments.Add(segment);
+        if (previouslySpawnedTile != null)
+        {
+            SnakeNode segment = Instantiate(nodePrefab, previouslySpawnedTile.transform);
+            segments.Add(segment);
+        }
     }
 
     private void OnTriggerEnter2D(Collider2D other)

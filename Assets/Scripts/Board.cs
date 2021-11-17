@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.Xml;
 using UnityEngine;
 using Cinemachine;
+using Unity.Mathematics;
+using UnityEngine.Analytics;
 using UnityEngine.Serialization;
 
 public class Board : MonoBehaviour
@@ -27,7 +29,7 @@ public class Board : MonoBehaviour
     private int gridYLength = 100;
 
     private Wall[,] walls;
-    private int[,] wallPlacementGrid;
+    public int[,] wallPlacementMap;
 
     private void Awake()
     {
@@ -44,14 +46,14 @@ public class Board : MonoBehaviour
         }
 
         CreateTiles();
-        CreateWallPlacementGrid();
-        GenerateCave();
+        CreateWallPlacementMap();
+        GenerateWallPlacement();
         CreateWalls();
     }
 
-    private void CreateWallPlacementGrid()
+    private void CreateWallPlacementMap()
     {
-        wallPlacementGrid = new int[gridSize.x, gridSize.y];
+        wallPlacementMap = new int[gridSize.x, gridSize.y];
         if (useRandomSeed)
         {
             seed = DateTime.Now.Ticks.ToString();
@@ -63,7 +65,7 @@ public class Board : MonoBehaviour
         {
             for (int y = 0; y < gridSize.y; y++)
             {
-                wallPlacementGrid[x, y] = (pseudoRandom.Next(0, 100) < randomFillPercent) ? 1 : 0;
+                wallPlacementMap[x, y] = (pseudoRandom.Next(0, 100) < randomFillPercent) ? 1 : 0;
             }
         }
     }
@@ -95,13 +97,12 @@ public class Board : MonoBehaviour
         {
             for (int y = 0; y < gridSize.y; y++)
             {
-                if (wallPlacementGrid[x, y] == 1)
+                if (wallPlacementMap[x, y] == 1)
                 {
                     Vector3 wallPosition = new Vector3(x + wallOffset, y + wallOffset, 0);
                     walls[x, y] = Instantiate(wallPrefab, wallPosition, Quaternion.identity);
                     walls[x, y].position = new Vector2Int(x, y);
                     walls[x, y].transform.SetParent(gameObject.transform, true);
-                    tileGrid[x, y].hasWall = true;
                 }
             }
         }
@@ -112,7 +113,7 @@ public class Board : MonoBehaviour
         return x >= 0 && x < gridSize.x && y >= 0 && y < gridSize.y;
     }
 
-    private List<Tile> GetNeighbors(Tile tile)
+    public List<Tile> GetNeighbors(Tile tile)
     {
         List<Tile> neighbors = new List<Tile>();
 
@@ -139,7 +140,7 @@ public class Board : MonoBehaviour
     }
 
 
-    private void GenerateCave()
+    private void GenerateWallPlacement()
     {
         for (int i = 0; i < amountOfSmoothingPasses; i++)
         {
@@ -154,7 +155,7 @@ public class Board : MonoBehaviour
 
                     foreach (Tile tile in neighbors)
                     {
-                        if (wallPlacementGrid[tile.position.x, tile.position.y] == 1)
+                        if (wallPlacementMap[tile.position.x, tile.position.y] == 1)
                         {
                             wallCounter++;
                         }
@@ -167,19 +168,20 @@ public class Board : MonoBehaviour
 
                     if (wallCounter < 4)
                     {
-                        wallPlacementGrid[currentTile.position.x, currentTile.position.y] = 0;
+                        wallPlacementMap[currentTile.position.x, currentTile.position.y] = 0;
                     }
                 }
             }
         }
-        ProcessMap();
+
+        RemoveTooSmallWallsAndRooms();
     }
 
     List<Tile> GetRegionTiles(int startX, int startY)
     {
         List<Tile> tiles = new List<Tile>();
         int[,] mapFlags = new int[gridSize.x, gridSize.y];
-        int tileType = wallPlacementGrid[startX, startY];
+        int tileType = wallPlacementMap[startX, startY];
 
         Queue<Tile> queue = new Queue<Tile>();
         Tile tile = tileGrid[startX, startY];
@@ -197,7 +199,7 @@ public class Board : MonoBehaviour
                 {
                     if (IsInMapRange(x, y) && (y == tile.position.y || x == tile.position.x))
                     {
-                        if (mapFlags[x, y] == 0 && wallPlacementGrid[x, y] == tileType)
+                        if (mapFlags[x, y] == 0 && wallPlacementMap[x, y] == tileType)
                         {
                             mapFlags[x, y] = 1;
                             queue.Enqueue(tileGrid[x, y]);
@@ -219,7 +221,7 @@ public class Board : MonoBehaviour
         {
             for (int y = 0; y < gridSize.y; y++)
             {
-                if (mapFlags[x, y] == 0 && wallPlacementGrid[x, y] == tileType)
+                if (mapFlags[x, y] == 0 && wallPlacementMap[x, y] == tileType)
                 {
                     List<Tile> newRegion = GetRegionTiles(x, y);
                     regions.Add(newRegion);
@@ -229,13 +231,13 @@ public class Board : MonoBehaviour
                         mapFlags[tile.position.x, tile.position.y] = 1;
                     }
                 }
-            }   
+            }
         }
 
         return regions;
     }
 
-    private void ProcessMap()
+    private void RemoveTooSmallWallsAndRooms()
     {
         List<List<Tile>> wallRegions = GetRegions(1);
         foreach (List<Tile> wallRegion in wallRegions)
@@ -244,21 +246,214 @@ public class Board : MonoBehaviour
             {
                 foreach (Tile tile in wallRegion)
                 {
-                    wallPlacementGrid[tile.position.x, tile.position.y] = 0;
+                    wallPlacementMap[tile.position.x, tile.position.y] = 0;
                 }
             }
         }
-        
+
         List<List<Tile>> roomRegions = GetRegions(0);
+        List<Room> survivingRooms = new List<Room>();
         foreach (List<Tile> roomRegion in roomRegions)
         {
             if (roomRegion.Count < roomThresholdSize)
             {
                 foreach (Tile tile in roomRegion)
                 {
-                    wallPlacementGrid[tile.position.x, tile.position.y] = 1;
+                    wallPlacementMap[tile.position.x, tile.position.y] = 1;
+                }
+            }
+            else
+            {
+                survivingRooms.Add(new Room(roomRegion, wallPlacementMap));
+            }
+        }
+
+        survivingRooms.Sort();
+        survivingRooms[0].isMainRoom = true;
+        survivingRooms[0].isAccessibleFromMainRoom = true;
+        ConnectClosestRooms(survivingRooms);
+    }
+
+    private void ConnectClosestRooms(List<Room> allRooms, bool forceAccessibilityFromMainRoom = false)
+    {
+        List<Room> roomsNotAccessibleFromMainRoom = new List<Room>();
+        List<Room> roomsAccessibleFromMainRoom = new List<Room>();
+
+        if (forceAccessibilityFromMainRoom)
+        {
+            foreach (Room room in allRooms)
+            {
+                if (room.isAccessibleFromMainRoom)
+                {
+                    roomsAccessibleFromMainRoom.Add(room);
+                }
+                else
+                {
+                    roomsNotAccessibleFromMainRoom.Add(room);
                 }
             }
         }
+        else
+        {
+            roomsNotAccessibleFromMainRoom = allRooms;
+            roomsAccessibleFromMainRoom = allRooms;
+        }
+
+        int bestDistance = 0;
+        Tile bestTileA = null;
+        Tile bestTileB = null;
+        Room bestRoomA = new Room();
+        Room bestRoomB = new Room();
+        bool possibleConnectionFound = false;
+
+        foreach (Room roomA in roomsNotAccessibleFromMainRoom)
+        {
+            if (!forceAccessibilityFromMainRoom)
+            {
+                possibleConnectionFound = false;
+                if (roomA.connectedRooms.Count > 0)
+                {
+                    continue;
+                }
+            }
+
+            foreach (Room roomB in roomsAccessibleFromMainRoom)
+            {
+                if (roomA == roomB || roomA.IsConnected(roomB))
+                {
+                    continue;
+                }
+
+                for (int tileIndexA = 0; tileIndexA < roomA.edgeTiles.Count; tileIndexA++)
+                {
+                    for (int tileIndexB = 0; tileIndexB < roomB.edgeTiles.Count; tileIndexB++)
+                    {
+                        Tile tileA = roomA.edgeTiles[tileIndexA];
+                        Tile tileB = roomB.edgeTiles[tileIndexB];
+                        int distanceBetweenRooms = (tileA.position.x - tileB.position.x) *
+                                                   (tileA.position.x - tileB.position.x) +
+                                                   (tileA.position.y - tileB.position.y) *
+                                                   (tileA.position.y - tileB.position.y);
+                        if (distanceBetweenRooms < bestDistance || !possibleConnectionFound)
+                        {
+                            bestDistance = distanceBetweenRooms;
+                            possibleConnectionFound = true;
+                            bestTileA = tileA;
+                            bestTileB = tileB;
+                            bestRoomA = roomA;
+                            bestRoomB = roomB;
+                        }
+                    }
+                }
+            }
+
+            if (possibleConnectionFound && !forceAccessibilityFromMainRoom)
+            {
+                CreatePassage(bestRoomA, bestRoomB, bestTileA, bestTileB);
+            }
+        }
+
+        if (possibleConnectionFound && forceAccessibilityFromMainRoom)
+        {
+            CreatePassage(bestRoomA, bestRoomB, bestTileA, bestTileB);
+            ConnectClosestRooms(allRooms, true);
+        }
+        
+        if (!forceAccessibilityFromMainRoom)
+        {
+            ConnectClosestRooms(allRooms, true);
+        }
+    }
+
+    private void CreatePassage(Room roomA, Room roomB, Tile tileA, Tile tileB)
+    {
+        List<Tile> line = GetPassageLine(tileA, tileB);
+        Room.ConnectRooms(roomA, roomB);
+        Debug.DrawLine(tileA.transform.position, tileB.transform.position, Color.green, 100f);
+
+        foreach (Tile tile in line)
+        {
+            DrawPassageDiameter(tile, 2);
+        }
+    }
+
+    private void DrawPassageDiameter(Tile tile, int radius)
+    {
+        for (int x = -radius; x <= radius; x++)
+        {
+            for (int y = -radius; y <= radius; y++)
+            {
+                if (x * x + y * y <= radius * radius)
+                {
+                    int drawX = tile.position.x + x;
+                    int drawY = tile.position.y + y;
+
+                    if (IsInMapRange(drawX, drawY))
+                    {
+                        wallPlacementMap[drawX, drawY] = 0;
+                    }
+                }
+            }
+        }
+    }
+
+    private List<Tile> GetPassageLine(Tile from, Tile to)
+    {
+        List<Tile> line = new List<Tile>();
+        int x = from.position.x;
+        int y = from.position.y;
+
+        int dx = to.position.x - from.position.x;
+        int dy = to.position.y - from.position.y;
+
+        bool inverted = false;
+        int step = Math.Sign(dx);
+        int gradientStep = Math.Sign(dy);
+
+        int longest = Mathf.Abs(dx);
+        int shortest = Mathf.Abs(dy);
+
+        if (longest < shortest)
+        {
+            inverted = true;
+            longest = Mathf.Abs(dy);
+            shortest = Mathf.Abs(dx);
+
+            step = Math.Sign(dy);
+            gradientStep = Math.Sign(dx);
+        }
+
+        int gradientAccumulation = longest / 2;
+        for (int i = 0; i < longest; i++)
+        {
+            line.Add(tileGrid[x, y]);
+
+            if (inverted)
+            {
+                y += step;
+            }
+            else
+            {
+                x += step;
+            }
+
+            gradientAccumulation += shortest;
+
+            if (gradientAccumulation >= longest)
+            {
+                if (inverted)
+                {
+                    x += gradientStep;
+                }
+                else
+                {
+                    y += gradientStep;
+                }
+
+                gradientAccumulation -= longest;
+            }
+        }
+
+        return line;
     }
 }
