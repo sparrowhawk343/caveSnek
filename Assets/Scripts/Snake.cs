@@ -28,13 +28,14 @@ public class Snake : TileObject
         Tick();
         SetDirection();
     }
-
+    
     private void SetStartingPosition()
     {
-        int x = Random.Range(0, board.gridSize.x - 1);
-        int y = Random.Range(0, board.gridSize.y - 1);
+        Vector2Int gridSize = Board.instance.gridSize;
+        int x = Random.Range(0, gridSize.x - 1);
+        int y = Random.Range(0, gridSize.y - 1);
 
-        if (IsTileSpawnable(board.tileGrid[x, y]))
+        if (IsTileSpawnable(Board.instance.tileGrid[x, y]))
         {
             transform.position = new Vector3(Mathf.Round(x), Mathf.Round(y), 0f);
         }
@@ -83,9 +84,9 @@ public class Snake : TileObject
     private void AddNodeToSnake()
     {
         Vector3 tailNodePreviousPosition = segments.GetLast().previousPosition;
-        Tile tileBehindTail = board.tileGrid[Mathf.RoundToInt(tailNodePreviousPosition.x),
+        Vector2Int tileBehindTail = Board.instance.tileGrid[Mathf.RoundToInt(tailNodePreviousPosition.x),
             Mathf.RoundToInt(tailNodePreviousPosition.y)];
-        SnakeNode segment = Instantiate(nodePrefab, tileBehindTail.transform);
+        SnakeNode segment = Instantiate(nodePrefab, new Vector3(tileBehindTail.x, tileBehindTail.y, 0f), Quaternion.identity);
         segments.Add(segment);
     }
 

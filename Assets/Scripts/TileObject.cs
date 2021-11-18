@@ -4,28 +4,19 @@ using UnityEngine;
 
 public class TileObject : MonoBehaviour
 {
-    public Board board;
-
-    private void Awake()
+    protected bool IsTileSpawnable(Vector2Int tile)
     {
-        board = Board.instance;
-    }
+        List<Vector2Int> neighbors = Board.instance.GetNeighbors(tile);
 
-    protected bool IsTileSpawnable(Tile tile)
-    {
-        List<Tile> neighbors = board.GetNeighbors(tile);
-        bool isSpawnable = true;
-
-        foreach (Tile neighbor in neighbors)
+        foreach (Vector2Int neighbor in neighbors)
         {
-            if (board.IsWall(neighbor.position.x, neighbor.position.y))
+            if (Board.instance.IsWall(neighbor.x, neighbor.y))
             {
-                isSpawnable = false;
-                return isSpawnable;
+                return false;
             }
         }
 
-        return isSpawnable;
-        
+        return true;
+
     }
 }

@@ -5,10 +5,10 @@ using UnityEngine;
 
 public class Room : IComparable<Room>
 {
-    public List<Tile> edgeTiles;
+    public List<Vector2Int> edgeTiles;
     public List<Room> connectedRooms;
 
-    private List<Tile> tiles;
+    private List<Vector2Int> tiles;
     private int roomSize;
     private Vector2Int boardSize;
 
@@ -21,20 +21,20 @@ public class Room : IComparable<Room>
         // empty constructor for when creating an empty room is needed
     }
 
-    public Room(List<Tile> roomTiles, int[,] map)
+    public Room(List<Vector2Int> roomTiles, int[,] map)
     {
         tiles = roomTiles;
         roomSize = tiles.Count;
         connectedRooms = new List<Room>();
-        edgeTiles = new List<Tile>();
+        edgeTiles = new List<Vector2Int>();
 
-        foreach (Tile tile in tiles)
+        foreach (Vector2Int tile in tiles)
         {
-            for (int x = tile.position.x - 1; x <= tile.position.x + 1; x++)
+            for (int x = tile.x - 1; x <= tile.x + 1; x++)
             {
-                for (int y = tile.position.y - 1; y <= tile.position.y + 1; y++)
+                for (int y = tile.y - 1; y <= tile.y + 1; y++)
                 {
-                    if (x == tile.position.x || y == tile.position.y)
+                    if (x == tile.x || y == tile.y)
                     {
                         if (IsOutOfMapRange(x, y, map) == false)
                         {

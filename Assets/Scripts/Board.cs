@@ -1,38 +1,41 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Xml;
 using UnityEngine;
-using Cinemachine;
-using Unity.Mathematics;
-using UnityEngine.Analytics;
-using UnityEngine.Serialization;
+
+// remove public and add getters, general variable cleanup
+// linked list pruning
 
 public class Board : MonoBehaviour
 {
     public static Board instance;
 
-    public HashSet<Vector3> fruitPositions = new HashSet<Vector3>();
-
-    public Vector2Int gridSize = new Vector2Int();
-    [Range(0, 100)] public int randomFillPercent = 45;
-    public string seed;
-    public bool useRandomSeed = false;
-    public Tile[,] tileGrid;
-    public Tile tilePrefab;
-    public Wall wallPrefab;
-    public int wallThresholdSize = 10;
-    public int roomThresholdSize = 10;
-    [FormerlySerializedAs("timesToRun")] public int amountOfSmoothingPasses = 1;
-
+    public HashSet<Vector3> fruitPositions { get; private set; }
+    public Vector2Int gridSize { get; private set; }
+    public Vector2Int[,] tileGrid { get; private set; }
+    public int[,] wallPlacement { get; private set; }
+    
+    [SerializeField] 
+    [Range(0, 100)] 
+    private int randomFillPercent = 45;
+    [SerializeField]
+    private bool useRandomSeed = false;
+    [SerializeField]
+    private Wall wallPrefab;
+    [SerializeField]
+    private int wallThresholdSize = 10;
+    [SerializeField]
+    private int roomThresholdSize = 10;
+    [SerializeField]
+    private int amountOfSmoothingPasses = 5;
+    
     private int gridXLength = 100;
     private int gridYLength = 100;
-    public int[,] wallPlacement;
+    private string seed;
 
     private void Awake()
     {
-        gridSize.x = gridXLength;
-        gridSize.y = gridYLength;
+        fruitPositions = new HashSet<Vector3>();
+        gridSize = new Vector2Int(gridXLength, gridYLength);
 
         if (instance != null && instance != this)
         {
@@ -77,16 +80,13 @@ public class Board : MonoBehaviour
 
     private void CreateTiles()
     {
-        tileGrid = new Tile[gridSize.x, gridSize.y];
+        tileGrid = new Vector2Int[gridSize.x, gridSize.y];
 
         for (int x = 0; x < gridSize.x; x++)
         {
             for (int y = 0; y < gridSize.y; y++)
             {
-                Vector3 tilePosition = new Vector3(x, y, 0);
-                tileGrid[x, y] = Instantiate(tilePrefab, tilePosition, Quaternion.identity);
-                tileGrid[x, y].position = new Vector2Int(x, y);
-                tileGrid[x, y].transform.SetParent(gameObject.transform, true);
+                tileGrid[x, y] = new Vector2Int(x, y);
             }
         }
     }
@@ -113,9 +113,9 @@ public class Board : MonoBehaviour
         return x >= 0 && x < gridSize.x && y >= 0 && y < gridSize.y;
     }
 
-    public List<Tile> GetNeighbors(Tile tile)
+    public List<Vector2Int> GetNeighbors(Vector2Int tile)
     {
-        List<Tile> neighbors = new List<Tile>();
+        List<Vector2Int> neighbors = new List<Vector2Int>();
 
         for (int x = -1; x <= 1; x++)
         {
@@ -126,8 +126,8 @@ public class Board : MonoBehaviour
                     continue;
                 }
 
-                int neighborX = tile.position.x + x;
-                int neighborY = tile.position.y + y;
+                int neighborX = tile.x + x;
+                int neighborY = tile.y + y;
 
                 if (IsInMapRange(neighborX, neighborY))
                 {
@@ -148,14 +148,14 @@ public class Board : MonoBehaviour
             {
                 for (int y = 0; y < gridSize.y; y++)
                 {
-                    Tile currentTile = tileGrid[x, y];
+                    Vector2Int currentTile = tileGrid[x, y];
                     int wallCounter = 0;
-                    List<Tile> neighbors = new List<Tile>();
+                    List<Vector2Int> neighbors = new List<Vector2Int>();
                     neighbors = GetNeighbors(currentTile);
 
-                    foreach (Tile tile in neighbors)
+                    foreach (Vector2Int tile in neighbors)
                     {
-                        if (wallPlacementMap[tile.position.x, tile.position.y] == 1)
+                        if (wallPlacementMap[tile.x, tile.y] == 1)
                         {
                             wallCounter++;
                         }
@@ -168,7 +168,7 @@ public class Board : MonoBehaviour
 
                     if (wallCounter < 4)
                     {
-                        wallPlacementMap[currentTile.position.x, currentTile.position.y] = 0;
+                        wallPlacementMap[currentTile.x, currentTile.y] = 0;
                     }
                 }
             }
@@ -177,14 +177,14 @@ public class Board : MonoBehaviour
         return RemoveTooSmallWallsAndRooms(wallPlacementMap);
     }
 
-    List<Tile> GetRegionTiles(int[,] wallPlacementMap, int startX, int startY)
+    List<Vector2Int> GetRegionTiles(int[,] wallPlacementMap, int startX, int startY)
     {
-        List<Tile> tiles = new List<Tile>();
+        List<Vector2Int> tiles = new List<Vector2Int>();
         int[,] mapFlags = new int[gridSize.x, gridSize.y];
         int tileType = wallPlacementMap[startX, startY];
 
-        Queue<Tile> queue = new Queue<Tile>();
-        Tile tile = tileGrid[startX, startY];
+        Queue<Vector2Int> queue = new Queue<Vector2Int>();
+        Vector2Int tile = tileGrid[startX, startY];
         queue.Enqueue(tile);
         mapFlags[startX, startY] = 1;
 
@@ -193,11 +193,11 @@ public class Board : MonoBehaviour
             tile = queue.Dequeue();
             tiles.Add(tile);
 
-            for (int x = tile.position.x - 1; x <= tile.position.x + 1; x++)
+            for (int x = tile.x - 1; x <= tile.x + 1; x++)
             {
-                for (int y = tile.position.y - 1; y <= tile.position.y + 1; y++)
+                for (int y = tile.y - 1; y <= tile.y + 1; y++)
                 {
-                    if (IsInMapRange(x, y) && (y == tile.position.y || x == tile.position.x))
+                    if (IsInMapRange(x, y) && (y == tile.y || x == tile.x))
                     {
                         if (mapFlags[x, y] == 0 && wallPlacementMap[x, y] == tileType)
                         {
@@ -212,9 +212,9 @@ public class Board : MonoBehaviour
         return tiles;
     }
 
-    List<List<Tile>> GetRegions(int[,] wallPlacementMap, int tileType)
+    List<List<Vector2Int>> GetRegions(int[,] wallPlacementMap, int tileType)
     {
-        List<List<Tile>> regions = new List<List<Tile>>();
+        List<List<Vector2Int>> regions = new List<List<Vector2Int>>();
         int[,] mapFlags = new int[gridSize.x, gridSize.y];
 
         for (int x = 0; x < gridSize.x; x++)
@@ -223,12 +223,12 @@ public class Board : MonoBehaviour
             {
                 if (mapFlags[x, y] == 0 && wallPlacementMap[x, y] == tileType)
                 {
-                    List<Tile> newRegion = GetRegionTiles(wallPlacementMap, x, y);
+                    List<Vector2Int> newRegion = GetRegionTiles(wallPlacementMap, x, y);
                     regions.Add(newRegion);
 
-                    foreach (Tile tile in newRegion)
+                    foreach (Vector2Int tile in newRegion)
                     {
-                        mapFlags[tile.position.x, tile.position.y] = 1;
+                        mapFlags[tile.x, tile.y] = 1;
                     }
                 }
             }
@@ -239,27 +239,27 @@ public class Board : MonoBehaviour
 
     private int[,] RemoveTooSmallWallsAndRooms(int[,] wallPlacementMap)
     {
-        List<List<Tile>> wallRegions = GetRegions(wallPlacementMap,1);
-        foreach (List<Tile> wallRegion in wallRegions)
+        List<List<Vector2Int>> wallRegions = GetRegions(wallPlacementMap,1);
+        foreach (List<Vector2Int> wallRegion in wallRegions)
         {
             if (wallRegion.Count < wallThresholdSize)
             {
-                foreach (Tile tile in wallRegion)
+                foreach (Vector2Int tile in wallRegion)
                 {
-                    wallPlacementMap[tile.position.x, tile.position.y] = 0;
+                    wallPlacementMap[tile.x, tile.y] = 0;
                 }
             }
         }
 
-        List<List<Tile>> roomRegions = GetRegions(wallPlacementMap, 0);
+        List<List<Vector2Int>> roomRegions = GetRegions(wallPlacementMap, 0);
         List<Room> survivingRooms = new List<Room>();
-        foreach (List<Tile> roomRegion in roomRegions)
+        foreach (List<Vector2Int> roomRegion in roomRegions)
         {
             if (roomRegion.Count < roomThresholdSize)
             {
-                foreach (Tile tile in roomRegion)
+                foreach (Vector2Int tile in roomRegion)
                 {
-                    wallPlacementMap[tile.position.x, tile.position.y] = 1;
+                    wallPlacementMap[tile.x, tile.y] = 1;
                 }
             }
             else
@@ -300,8 +300,8 @@ public class Board : MonoBehaviour
         }
 
         int bestDistance = 0;
-        Tile bestTileA = null;
-        Tile bestTileB = null;
+        Vector2Int bestTileA = new Vector2Int();
+        Vector2Int bestTileB = new Vector2Int();
         Room bestRoomA = new Room();
         Room bestRoomB = new Room();
         bool possibleConnectionFound = false;
@@ -328,12 +328,12 @@ public class Board : MonoBehaviour
                 {
                     for (int tileIndexB = 0; tileIndexB < roomB.edgeTiles.Count; tileIndexB++)
                     {
-                        Tile tileA = roomA.edgeTiles[tileIndexA];
-                        Tile tileB = roomB.edgeTiles[tileIndexB];
-                        int distanceBetweenRooms = (tileA.position.x - tileB.position.x) *
-                                                   (tileA.position.x - tileB.position.x) +
-                                                   (tileA.position.y - tileB.position.y) *
-                                                   (tileA.position.y - tileB.position.y);
+                        Vector2Int tileA = roomA.edgeTiles[tileIndexA];
+                        Vector2Int tileB = roomB.edgeTiles[tileIndexB];
+                        int distanceBetweenRooms = (tileA.x - tileB.x) *
+                                                   (tileA.x - tileB.x) +
+                                                   (tileA.y - tileB.y) *
+                                                   (tileA.y - tileB.y);
                         if (distanceBetweenRooms < bestDistance || !possibleConnectionFound)
                         {
                             bestDistance = distanceBetweenRooms;
@@ -367,19 +367,19 @@ public class Board : MonoBehaviour
         return wallPlacementMap;
     }
 
-    private void CreatePassage(int[,] wallPlacementMap, Room roomA, Room roomB, Tile tileA, Tile tileB)
+    private void CreatePassage(int[,] wallPlacementMap, Room roomA, Room roomB, Vector2Int tileA, Vector2Int tileB)
     {
-        List<Tile> line = GetPassageLine(tileA, tileB);
+        List<Vector2Int> line = GetPassageLine(tileA, tileB);
         Room.ConnectRooms(roomA, roomB);
-        Debug.DrawLine(tileA.transform.position, tileB.transform.position, Color.green, 100f);
+        Debug.DrawLine(new Vector3(tileA.x, tileA.y, 0f), new Vector3(tileB.x, tileB.y, 0f), Color.green, 100f);
 
-        foreach (Tile tile in line)
+        foreach (Vector2Int tile in line)
         {
             DrawPassageDiameter(wallPlacementMap, tile, 2);
         }
     }
 
-    private void DrawPassageDiameter(int[,] wallPlacementMap, Tile tile, int radius)
+    private void DrawPassageDiameter(int[,] wallPlacementMap, Vector2Int tile, int radius)
     {
         for (int x = -radius; x <= radius; x++)
         {
@@ -387,8 +387,8 @@ public class Board : MonoBehaviour
             {
                 if (x * x + y * y <= radius * radius)
                 {
-                    int drawX = tile.position.x + x;
-                    int drawY = tile.position.y + y;
+                    int drawX = tile.x + x;
+                    int drawY = tile.y + y;
 
                     if (IsInMapRange(drawX, drawY))
                     {
@@ -399,14 +399,14 @@ public class Board : MonoBehaviour
         }
     }
 
-    private List<Tile> GetPassageLine(Tile from, Tile to)
+    private List<Vector2Int> GetPassageLine(Vector2Int from, Vector2Int to)
     {
-        List<Tile> line = new List<Tile>();
-        int x = from.position.x;
-        int y = from.position.y;
+        List<Vector2Int> line = new List<Vector2Int>();
+        int x = from.x;
+        int y = from.y;
 
-        int dx = to.position.x - x;
-        int dy = to.position.y - y;
+        int dx = to.x - x;
+        int dy = to.y - y;
 
         bool inverted = false;
         int step = Math.Sign(dx);

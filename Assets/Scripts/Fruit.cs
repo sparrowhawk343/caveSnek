@@ -18,14 +18,14 @@ public class Fruit : TileObject
     public void RandomizePosition()
     {
         
-        int x = Random.Range(0, board.gridSize.x - 1);
-        int y = Random.Range(0, board.gridSize.y - 1);
+        int x = Random.Range(0, Board.instance.gridSize.x - 1);
+        int y = Random.Range(0, Board.instance.gridSize.y - 1);
 
-        if (IsTileSpawnable(board.tileGrid[x, y]))
+        if (IsTileSpawnable(Board.instance.tileGrid[x, y]))
         {
-            board.fruitPositions.Remove(transform.position);
+            Board.instance.fruitPositions.Remove(transform.position);
             transform.position = new Vector3(Mathf.Round(x), Mathf.Round(y), 0f);
-            board.fruitPositions.Add(transform.position);
+            Board.instance.fruitPositions.Add(transform.position);
         }
         else
         {
