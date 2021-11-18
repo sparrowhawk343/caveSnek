@@ -27,9 +27,7 @@ public class Board : MonoBehaviour
 
     private int gridXLength = 100;
     private int gridYLength = 100;
-
-    private Wall[,] walls;
-    public int[,] wallPlacementMap;
+    public int[,] wallPlacement;
 
     private void Awake()
     {
@@ -46,14 +44,17 @@ public class Board : MonoBehaviour
         }
 
         CreateTiles();
-        CreateWallPlacementMap();
-        GenerateWallPlacement();
-        CreateWalls();
+        wallPlacement = CreateWallPlacementMap();
     }
 
-    private void CreateWallPlacementMap()
+    public bool IsWall(int x, int y)
     {
-        wallPlacementMap = new int[gridSize.x, gridSize.y];
+        return wallPlacement[x, y] == 1;
+    }
+    
+    private int[,] CreateWallPlacementMap()
+    {
+        int[,] wallPlacementMap = new int[gridSize.x, gridSize.y];
         if (useRandomSeed)
         {
             seed = DateTime.Now.Ticks.ToString();
@@ -68,6 +69,10 @@ public class Board : MonoBehaviour
                 wallPlacementMap[x, y] = (pseudoRandom.Next(0, 100) < randomFillPercent) ? 1 : 0;
             }
         }
+
+        wallPlacementMap = GenerateWallPlacement(wallPlacementMap);
+        CreateWalls(wallPlacementMap);
+        return wallPlacementMap;
     }
 
     private void CreateTiles()
@@ -86,10 +91,8 @@ public class Board : MonoBehaviour
         }
     }
 
-    private void CreateWalls()
+    private void CreateWalls(int[,] wallPlacementMap)
     {
-        walls = new Wall[gridSize.x, gridSize.y];
-
         for (int x = 0; x < gridSize.x; x++)
         {
             for (int y = 0; y < gridSize.y; y++)
@@ -97,9 +100,9 @@ public class Board : MonoBehaviour
                 if (wallPlacementMap[x, y] == 1)
                 {
                     Vector3 wallPosition = new Vector3(x, y, 0);
-                    walls[x, y] = Instantiate(wallPrefab, wallPosition, Quaternion.identity);
-                    walls[x, y].position = new Vector2Int(x, y);
-                    walls[x, y].transform.SetParent(gameObject.transform, true);
+                    Wall wall = Instantiate(wallPrefab, wallPosition, Quaternion.identity);
+                    wall.position = new Vector2Int(x, y);
+                    wall.transform.SetParent(gameObject.transform, true);
                 }
             }
         }
@@ -137,7 +140,7 @@ public class Board : MonoBehaviour
     }
 
 
-    private void GenerateWallPlacement()
+    private int[,] GenerateWallPlacement(int[,] wallPlacementMap)
     {
         for (int i = 0; i < amountOfSmoothingPasses; i++)
         {
@@ -171,10 +174,10 @@ public class Board : MonoBehaviour
             }
         }
 
-        RemoveTooSmallWallsAndRooms();
+        return RemoveTooSmallWallsAndRooms(wallPlacementMap);
     }
 
-    List<Tile> GetRegionTiles(int startX, int startY)
+    List<Tile> GetRegionTiles(int[,] wallPlacementMap, int startX, int startY)
     {
         List<Tile> tiles = new List<Tile>();
         int[,] mapFlags = new int[gridSize.x, gridSize.y];
@@ -209,7 +212,7 @@ public class Board : MonoBehaviour
         return tiles;
     }
 
-    List<List<Tile>> GetRegions(int tileType)
+    List<List<Tile>> GetRegions(int[,] wallPlacementMap, int tileType)
     {
         List<List<Tile>> regions = new List<List<Tile>>();
         int[,] mapFlags = new int[gridSize.x, gridSize.y];
@@ -220,7 +223,7 @@ public class Board : MonoBehaviour
             {
                 if (mapFlags[x, y] == 0 && wallPlacementMap[x, y] == tileType)
                 {
-                    List<Tile> newRegion = GetRegionTiles(x, y);
+                    List<Tile> newRegion = GetRegionTiles(wallPlacementMap, x, y);
                     regions.Add(newRegion);
 
                     foreach (Tile tile in newRegion)
@@ -234,9 +237,9 @@ public class Board : MonoBehaviour
         return regions;
     }
 
-    private void RemoveTooSmallWallsAndRooms()
+    private int[,] RemoveTooSmallWallsAndRooms(int[,] wallPlacementMap)
     {
-        List<List<Tile>> wallRegions = GetRegions(1);
+        List<List<Tile>> wallRegions = GetRegions(wallPlacementMap,1);
         foreach (List<Tile> wallRegion in wallRegions)
         {
             if (wallRegion.Count < wallThresholdSize)
@@ -248,7 +251,7 @@ public class Board : MonoBehaviour
             }
         }
 
-        List<List<Tile>> roomRegions = GetRegions(0);
+        List<List<Tile>> roomRegions = GetRegions(wallPlacementMap, 0);
         List<Room> survivingRooms = new List<Room>();
         foreach (List<Tile> roomRegion in roomRegions)
         {
@@ -268,10 +271,10 @@ public class Board : MonoBehaviour
         survivingRooms.Sort();
         survivingRooms[0].isMainRoom = true;
         survivingRooms[0].isAccessibleFromMainRoom = true;
-        ConnectClosestRooms(survivingRooms);
+        return ConnectClosestRooms(wallPlacementMap, survivingRooms); 
     }
 
-    private void ConnectClosestRooms(List<Room> allRooms, bool forceAccessibilityFromMainRoom = false)
+    private int[,] ConnectClosestRooms(int[,] wallPlacementMap, List<Room> allRooms, bool forceAccessibilityFromMainRoom = false)
     {
         List<Room> roomsNotAccessibleFromMainRoom = new List<Room>();
         List<Room> roomsAccessibleFromMainRoom = new List<Room>();
@@ -346,23 +349,25 @@ public class Board : MonoBehaviour
 
             if (possibleConnectionFound && !forceAccessibilityFromMainRoom)
             {
-                CreatePassage(bestRoomA, bestRoomB, bestTileA, bestTileB);
+                CreatePassage(wallPlacementMap, bestRoomA, bestRoomB, bestTileA, bestTileB);
             }
         }
 
         if (possibleConnectionFound && forceAccessibilityFromMainRoom)
         {
-            CreatePassage(bestRoomA, bestRoomB, bestTileA, bestTileB);
-            ConnectClosestRooms(allRooms, true);
+            CreatePassage(wallPlacementMap, bestRoomA, bestRoomB, bestTileA, bestTileB);
+            ConnectClosestRooms(wallPlacementMap, allRooms, true);
         }
         
         if (!forceAccessibilityFromMainRoom)
         {
-            ConnectClosestRooms(allRooms, true);
+            ConnectClosestRooms(wallPlacementMap, allRooms, true);
         }
+
+        return wallPlacementMap;
     }
 
-    private void CreatePassage(Room roomA, Room roomB, Tile tileA, Tile tileB)
+    private void CreatePassage(int[,] wallPlacementMap, Room roomA, Room roomB, Tile tileA, Tile tileB)
     {
         List<Tile> line = GetPassageLine(tileA, tileB);
         Room.ConnectRooms(roomA, roomB);
@@ -370,11 +375,11 @@ public class Board : MonoBehaviour
 
         foreach (Tile tile in line)
         {
-            DrawPassageDiameter(tile, 2);
+            DrawPassageDiameter(wallPlacementMap, tile, 2);
         }
     }
 
-    private void DrawPassageDiameter(Tile tile, int radius)
+    private void DrawPassageDiameter(int[,] wallPlacementMap, Tile tile, int radius)
     {
         for (int x = -radius; x <= radius; x++)
         {

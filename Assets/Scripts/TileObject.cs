@@ -18,7 +18,7 @@ public class TileObject : MonoBehaviour
 
         foreach (Tile neighbor in neighbors)
         {
-            if (board.wallPlacementMap[neighbor.position.x, neighbor.position.y] == 1)
+            if (board.IsWall(neighbor.position.x, neighbor.position.y))
             {
                 isSpawnable = false;
                 return isSpawnable;
