@@ -57,9 +57,12 @@ public class Snake : TileObject
         segments.GetFirst().Move(newHeadPosition);
         
         // this for loop starts at the first node that is not the head
-        for (int i = 1; i < segments.Count; i++)
+        ADT.LinkedList<SnakeNode>.Iterator iterator = segments.GetIterator();
+        (SnakeNode previous, SnakeNode current) = iterator.GetNext();
+        while (current != null)
         {
-            segments[i].Move(segments[i - 1].previousPosition);
+            current.Move(previous.previousPosition);
+            (previous, current) = iterator.GetNext();
         }
     }
 

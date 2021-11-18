@@ -27,10 +27,11 @@ public class Board : MonoBehaviour
     private int roomThresholdSize = 10;
     [SerializeField]
     private int amountOfSmoothingPasses = 5;
+    [SerializeField]
+    private string seed;
     
     private int gridXLength = 100;
     private int gridYLength = 100;
-    private string seed;
 
     private void Awake()
     {
