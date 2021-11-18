@@ -1,20 +1,18 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class Room : IComparable<Room>
 {
-    public List<Vector2Int> edgeTiles;
-    public List<Room> connectedRooms;
+    public List<Vector2Int> edgeTiles { get; }
+    public List<Room> connectedRooms { get; }
+    
+    internal bool isAccessibleFromMainRoom;
+    internal bool isMainRoom;
 
     private List<Vector2Int> tiles;
     private int roomSize;
     private Vector2Int boardSize;
-
-    public bool isAccessibleFromMainRoom;
-    public bool isMainRoom;
-
 
     public Room()
     {

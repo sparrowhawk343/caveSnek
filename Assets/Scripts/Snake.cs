@@ -3,18 +3,20 @@ using Random = UnityEngine.Random;
 
 public class Snake : TileObject
 {
+    public bool isDead { get; private set; }
+    
+    [SerializeField]
+    private SnakeNode nodePrefab;
+    
     // data structure fields
     private ADT.LinkedList<SnakeNode> segments = new ADT.LinkedList<SnakeNode>();
     private SnakeNode headNode;
-    public SnakeNode nodePrefab;
 
     // movement fields
     private float tickTime = 0.25f;
     private float timer;
     private Vector2 currentDirection;
-
-    public bool isDead;
-
+    
     private void Start()
     {
         isDead = false;

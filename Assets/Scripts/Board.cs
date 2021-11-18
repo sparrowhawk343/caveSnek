@@ -2,8 +2,8 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-// remove public and add getters, general variable cleanup
 // linked list pruning
+// add comments to room generation methods (outside and inline where needed)
 
 public class Board : MonoBehaviour
 {
@@ -55,6 +55,7 @@ public class Board : MonoBehaviour
         return wallPlacement[x, y] == 1;
     }
     
+    
     private int[,] CreateWallPlacementMap()
     {
         int[,] wallPlacementMap = new int[gridSize.x, gridSize.y];
@@ -101,7 +102,6 @@ public class Board : MonoBehaviour
                 {
                     Vector3 wallPosition = new Vector3(x, y, 0);
                     Wall wall = Instantiate(wallPrefab, wallPosition, Quaternion.identity);
-                    wall.position = new Vector2Int(x, y);
                     wall.transform.SetParent(gameObject.transform, true);
                 }
             }
@@ -269,7 +269,8 @@ public class Board : MonoBehaviour
         }
 
         survivingRooms.Sort();
-        survivingRooms[0].isMainRoom = true;
+        // fix this guy 
+        // survivingRooms[0].isMainRoom = true;
         survivingRooms[0].isAccessibleFromMainRoom = true;
         return ConnectClosestRooms(wallPlacementMap, survivingRooms); 
     }

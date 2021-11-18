@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ADT
 {
@@ -19,7 +16,7 @@ namespace ADT
             count = 0;
         }
 
-        public class ListNode
+        private class ListNode
         {
             public T nodeItem;
             public ListNode nextNode;
@@ -266,7 +263,7 @@ namespace ADT
             }
         }
 
-        public ListNode GetNode(int index)
+        private ListNode GetNode(int index)
         {
             ListNode currentNode = head;
             ListNode previousNode = head;

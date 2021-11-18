@@ -1,11 +1,8 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class SnakeNode : MonoBehaviour
 {
-    public Vector3 previousPosition;
+    public Vector3 previousPosition { get; private set; }
 
     public void Move(Vector3 newPosition)
     {
