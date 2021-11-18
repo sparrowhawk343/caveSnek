@@ -7,6 +7,7 @@ using UnityEngine.SceneManagement;
 public class SceneManager : MonoBehaviour
 {
     public static SceneManager instance;
+    private Snake snake;
     
     private void Awake()
     {
@@ -17,6 +18,20 @@ public class SceneManager : MonoBehaviour
         else
         {
             instance = this;
+        }
+
+        snake = FindObjectOfType<Snake>();
+    }
+
+    private void Update()
+    {
+        if (snake == null)
+        {
+            return;
+        }
+        if (snake.isDead)
+        {
+            LoadScene(1);
         }
     }
 

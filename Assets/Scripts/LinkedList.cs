@@ -88,9 +88,6 @@ namespace ADT
             }
         }
 
-        // rememeber to use the ref keyword when calling this janky bonus method
-        // this method returns a new array with the contents of both the target array and the linked list
-        // index is where the merge is supposed to start inside target
         public void InsertInArray(ref T[] target, int index)
         {
             ListNode currentNode = head;
@@ -134,6 +131,16 @@ namespace ADT
                 currentNode = currentNode.nextNode;
             }
             return -1;
+        }
+
+        public T GetFirst()
+        {
+            return head.nodeItem;
+        }
+        
+        public T GetLast()
+        {
+            return tail.nodeItem;
         }
 
         public void Insert(int index, T item)
@@ -197,7 +204,7 @@ namespace ADT
             }
         }
 
-        // some array access thing
+        // array access thing
         public T this[int index]
         {
             get

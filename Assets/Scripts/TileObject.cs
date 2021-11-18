@@ -8,8 +8,7 @@ public class TileObject : MonoBehaviour
 
     private void Awake()
     {
-        // Board.instance didn't work here, find out why
-        board = FindObjectOfType<Board>();
+        board = Board.instance;
     }
 
     protected bool IsTileSpawnable(Tile tile)

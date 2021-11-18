@@ -36,13 +36,13 @@ public class Board : MonoBehaviour
         gridSize.x = gridXLength;
         gridSize.y = gridYLength;
 
-        if (instance == null)
+        if (instance != null && instance != this)
         {
-            instance = this;
+            Destroy(gameObject);
         }
         else
         {
-            Destroy(gameObject);
+            instance = this;
         }
 
         CreateTiles();
@@ -73,14 +73,12 @@ public class Board : MonoBehaviour
     private void CreateTiles()
     {
         tileGrid = new Tile[gridSize.x, gridSize.y];
-        // use this if needed to offset from/to unity's displayed units
-        float gridOffset = 0f;
 
         for (int x = 0; x < gridSize.x; x++)
         {
             for (int y = 0; y < gridSize.y; y++)
             {
-                Vector3 tilePosition = new Vector3(x + gridOffset, y + gridOffset, 0);
+                Vector3 tilePosition = new Vector3(x, y, 0);
                 tileGrid[x, y] = Instantiate(tilePrefab, tilePosition, Quaternion.identity);
                 tileGrid[x, y].position = new Vector2Int(x, y);
                 tileGrid[x, y].transform.SetParent(gameObject.transform, true);
@@ -91,7 +89,6 @@ public class Board : MonoBehaviour
     private void CreateWalls()
     {
         walls = new Wall[gridSize.x, gridSize.y];
-        float wallOffset = 0f;
 
         for (int x = 0; x < gridSize.x; x++)
         {
@@ -99,7 +96,7 @@ public class Board : MonoBehaviour
             {
                 if (wallPlacementMap[x, y] == 1)
                 {
-                    Vector3 wallPosition = new Vector3(x + wallOffset, y + wallOffset, 0);
+                    Vector3 wallPosition = new Vector3(x, y, 0);
                     walls[x, y] = Instantiate(wallPrefab, wallPosition, Quaternion.identity);
                     walls[x, y].position = new Vector2Int(x, y);
                     walls[x, y].transform.SetParent(gameObject.transform, true);
@@ -403,8 +400,8 @@ public class Board : MonoBehaviour
         int x = from.position.x;
         int y = from.position.y;
 
-        int dx = to.position.x - from.position.x;
-        int dy = to.position.y - from.position.y;
+        int dx = to.position.x - x;
+        int dy = to.position.y - y;
 
         bool inverted = false;
         int step = Math.Sign(dx);
@@ -456,4 +453,28 @@ public class Board : MonoBehaviour
 
         return line;
     }
+
+    public Vector3 GetScreenWrapPosition(Vector3 currentPosition)
+    {
+        if (currentPosition.x > gridSize.x - 1)
+        {
+            return new Vector3(0f, currentPosition.y, currentPosition.z);
+        }
+        if (currentPosition.x < 0f)
+        {
+            return new Vector3(gridSize.x - 1, currentPosition.y, currentPosition.z);
+        }
+        if (currentPosition.y > gridSize.y - 1)
+        {
+            return new Vector3(currentPosition.x, 0f, currentPosition.z);
+        }
+        if (currentPosition.y < 0f)
+        {
+            return new Vector3(currentPosition.x, gridSize.y - 1, currentPosition.z);
+        }
+
+        return currentPosition;
+    }
+
+
 }
