@@ -6,17 +6,16 @@ public class Room : IComparable<Room>
 {
     public List<Vector2Int> edgeTiles { get; }
     public List<Room> connectedRooms { get; }
-    
+
     internal bool isAccessibleFromMainRoom;
-    internal bool isMainRoom;
 
     private List<Vector2Int> tiles;
     private int roomSize;
     private Vector2Int boardSize;
 
+    // empty constructor for when creating an empty room is needed
     public Room()
     {
-        // empty constructor for when creating an empty room is needed
     }
 
     public Room(List<Vector2Int> roomTiles, int[,] map)
@@ -26,6 +25,7 @@ public class Room : IComparable<Room>
         connectedRooms = new List<Room>();
         edgeTiles = new List<Vector2Int>();
 
+        // go through the tiles in the room and find the edge tiles
         foreach (Vector2Int tile in tiles)
         {
             for (int x = tile.x - 1; x <= tile.x + 1; x++)
@@ -46,7 +46,7 @@ public class Room : IComparable<Room>
             }
         }
     }
-    
+
     private bool IsOutOfMapRange(int x, int y, int[,] targetMap)
     {
         return x < 0 || x > targetMap.GetLength(0) - 1 || y < 0 || y > targetMap.GetLength(1) - 1;
@@ -62,6 +62,7 @@ public class Room : IComparable<Room>
         {
             roomA.SetAccessibleFromMainRoom();
         }
+
         roomA.connectedRooms.Add(roomB);
         roomB.connectedRooms.Add(roomA);
     }
