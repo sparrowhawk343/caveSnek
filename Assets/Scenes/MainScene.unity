@@ -734,11 +734,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a769a209ca8f7384f97f66c88909fd46, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  randomFillPercent: 65
-  useRandomSeed: 1
+  randomFillPercent: 66
+  useRandomSeed: 0
   wallPrefab: {fileID: 1478569028632551200, guid: 82e48b7c37f86a249b0cb9d497e61be2, type: 3}
   wallThresholdSize: 10
-  roomThresholdSize: 50
+  roomThresholdSize: 40
   amountOfSmoothingPasses: 5
   seed: 
 --- !u!1001 &133851229333111124

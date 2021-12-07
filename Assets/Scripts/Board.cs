@@ -474,28 +474,23 @@ public class Board : MonoBehaviour
         return line;
     }
 
-    // return a screenwrapped position if outside of the grid
-    public Vector3 GetScreenWrapPosition(Vector3 currentPosition)
+    private int Modulo(int value, int length)
     {
-        if (currentPosition.x > gridSize.x - 1)
-        {
-            return new Vector3(0f, currentPosition.y, currentPosition.z);
-        }
-        if (currentPosition.x < 0f)
-        {
-            return new Vector3(gridSize.x - 1, currentPosition.y, currentPosition.z);
-        }
-        if (currentPosition.y > gridSize.y - 1)
-        {
-            return new Vector3(currentPosition.x, 0f, currentPosition.z);
-        }
-        if (currentPosition.y < 0f)
-        {
-            return new Vector3(currentPosition.x, gridSize.y - 1, currentPosition.z);
-        }
+        return (value % length + length ) % length;
+    }
+    
+    // return a screenwrapped position if outside of the grid
+    public Vector2Int GetWrappedGridPosition(Vector2Int currentPosition)
+    {
+        currentPosition.x = Modulo(currentPosition.x, gridSize.x);
+        currentPosition.y = Modulo(currentPosition.y, gridSize.y);
 
         return currentPosition;
     }
-
-
+    
+    public Vector3 GridToWorldPosition(Vector2Int currentPosition)
+    {
+        return new Vector3(currentPosition.x, currentPosition.y, 0f);
+    }
+    
 }

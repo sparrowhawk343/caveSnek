@@ -15,7 +15,8 @@ public class Snake : TileObject
     // movement fields
     private float tickTime = 0.25f;
     private float timer;
-    private Vector2 currentDirection;
+    private Vector2Int currentDirection;
+    private Vector2Int gridSpaceHeadCoordinate;
     
     private void Start()
     {
@@ -34,12 +35,12 @@ public class Snake : TileObject
     private void SetStartingPosition()
     {
         Vector2Int gridSize = Board.instance.gridSize;
-        int x = Random.Range(0, gridSize.x - 1);
-        int y = Random.Range(0, gridSize.y - 1);
+        gridSpaceHeadCoordinate.x = Random.Range(0, gridSize.x - 1);
+        gridSpaceHeadCoordinate.y = Random.Range(0, gridSize.y - 1);
 
-        if (IsTileSpawnable(Board.instance.tileGrid[x, y]))
+        if (IsTileSpawnable(Board.instance.tileGrid[gridSpaceHeadCoordinate.x, gridSpaceHeadCoordinate.y]))
         {
-            transform.position = new Vector3(Mathf.Round(x), Mathf.Round(y), 0f);
+            transform.position = Board.instance.GridToWorldPosition(gridSpaceHeadCoordinate);
         }
         else
         {
@@ -49,12 +50,10 @@ public class Snake : TileObject
     
     private void Move()
     {
-        Vector3 currentPosition = transform.position;
-        Vector3 newHeadPosition = new Vector3(Mathf.RoundToInt(currentPosition.x) + currentDirection.x,
-            Mathf.RoundToInt(currentPosition.y) + currentDirection.y, 0f);
-        newHeadPosition = Board.instance.GetScreenWrapPosition(newHeadPosition);
-        
-        segments.GetFirst().Move(newHeadPosition);
+        gridSpaceHeadCoordinate += currentDirection;
+        gridSpaceHeadCoordinate = Board.instance.GetWrappedGridPosition(gridSpaceHeadCoordinate);
+        Vector3 worldPosition = Board.instance.GridToWorldPosition(gridSpaceHeadCoordinate);
+        segments.GetFirst().Move(worldPosition);
         
         // this for loop starts at the first node that is not the head
         ADT.LinkedList<SnakeNode>.Iterator iterator = segments.GetIterator();
@@ -70,19 +69,19 @@ public class Snake : TileObject
     {
         if (Input.GetKeyDown(KeyCode.W) && currentDirection != Vector2.down)
         {
-            currentDirection = Vector2.up;
+            currentDirection = Vector2Int.up;
         }
         else if (Input.GetKeyDown(KeyCode.S) && currentDirection != Vector2.up)
         {
-            currentDirection = Vector2.down;
+            currentDirection = Vector2Int.down;
         }
         else if (Input.GetKeyDown(KeyCode.A) && currentDirection != Vector2.right)
         {
-            currentDirection = Vector2.left;
+            currentDirection = Vector2Int.left;
         }
         else if (Input.GetKeyDown(KeyCode.D) && currentDirection != Vector2.left)
         {
-            currentDirection = Vector2.right;
+            currentDirection = Vector2Int.right;
         }
     }
 
